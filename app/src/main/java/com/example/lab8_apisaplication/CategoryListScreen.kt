@@ -3,8 +3,12 @@ package com.example.lab8_apisaplication
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -13,75 +17,64 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 
-
-/**
+// Main CategoryScreen that displays the categories and handles navigation
 @Composable
-fun CategoryListScreen(
-    viewModel: List<Category>,
-    onCategoryClick: (String) -> Unit // Callback que pasará el nombre de la categoría
-) {
+fun CategoryScreen(viewModel: MainViewModel = viewModel(), navController: NavController) {
     val categoriesState by viewModel.categoriesState
-    if (categoriesState.loading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    }
-    else if (categoriesState.error != null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "Error: ${categoriesState.error}")
-        }
-    }
-    else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(categoriesState.list) { category ->
-                CategoryItem(category = category, onClick = { onCategoryClick(category.strCategory) })
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            categoriesState.loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            categoriesState.error != null -> {
+                Text(text = "Error: ${categoriesState.error}")
+            }
+            else -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(categoriesState.list) { category ->
+                        CategoryItem(category = category) {
+                            // Navigate to the MealsScreen when clicking on a category
+                            navController.navigate("meals/${category.strCategory}")
+                        }
+                    }
+                }
             }
         }
     }
 }
-**/
 
-@Composable
-fun CategoryListScreen(categories: List<Category>, onCategoryClick: (String) -> Unit) {
-    LazyColumn {
-        items(categories) { category ->
-            Text(
-                text = category.strCategory,
-                modifier = Modifier
-                    .clickable { onCategoryClick(category.strCategory) }
-                    .padding(16.dp)
-            )
-        }
-    }
-}
-
+// Composable for displaying a single category item
 @Composable
 fun CategoryItem(category: Category, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .clickable { onClick() }, // Al hacer clic, llamamos a la función onClick
+            .clickable { onClick() }, // OnClick navigates to the next screen
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Cargar la imagen con Coil
+        // Load category thumbnail using Coil
         Image(
             painter = rememberImagePainter(data = category.strCategoryThumb),
             contentDescription = category.strCategory,
-            modifier = Modifier.size(80.dp), // Tamaño de la imagen
+            modifier = Modifier.size(80.dp), // Image size
             contentScale = ContentScale.Crop
         )
 
-        Spacer(modifier = Modifier.width(16.dp)) // Espacio entre la imagen y el texto
+        Spacer(modifier = Modifier.width(16.dp)) // Space between image and text
 
         Text(text = category.strCategory, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
+// Preview for testing CategoryItem in isolation
 @Preview(showBackground = true)
 @Composable
 fun PreviewCategoryItem() {

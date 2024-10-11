@@ -7,25 +7,30 @@ import androidx.navigation.compose.composable
 
 @Composable
 fun AppNavHost(navController: NavHostController, viewModel: MainViewModel) {
-    NavHost(navController, startDestination = "home") {
-        composable("home"){
-            HomeScreen(viewModel)
-        }
+    NavHost(navController, startDestination = "categories") {
         composable("categories") {
-            CategoryListScreen(viewModel.categories.value) { category ->
-                viewModel.fetchMealsByCategory(category)
-                navController.navigate("meals/$category")
-            }
+            CategoryScreen(viewModel = viewModel, navController = navController)
         }
         composable("meals/{category}") { backStackEntry ->
-            MealListScreen(viewModel.meals.value) { mealId ->
-                viewModel.fetchMealDetails(mealId)
-                navController.navigate("recipe/$mealId")
+            val category = backStackEntry.arguments?.getString("category")
+            category?.let {
+                viewModel.fetchMealsByCategory(it)
+                MealListScreen(viewModel.meals.value) { mealId ->
+                    viewModel.fetchMealDetails(mealId)
+                    // Navigate to recipe screen and clear the stack
+                    navController.navigate("recipe/$mealId") {
+                        popUpTo("categories") { inclusive = true }
+                    }
+                }
             }
         }
-        composable("recipe/{mealId}") {
-            viewModel.mealDetails.value?.let { it1 -> RecipeScreen(it1) }
+        composable("recipe/{mealId}") { backStackEntry ->
+            val mealId = backStackEntry.arguments?.getString("mealId")
+            mealId?.let {
+                viewModel.mealDetails.value?.let { mealDetails ->
+                    RecipeScreen(mealDetails)
+                }
+            }
         }
     }
 }
-
